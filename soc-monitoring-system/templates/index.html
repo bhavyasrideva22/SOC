@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOC Monitor — Threat Detection System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon"><i class="bi bi-shield-fill-check"></i></span>
+      <span class="brand-text">SOC<span class="brand-accent">Monitor</span></span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#overview"   class="nav-item active"><i class="bi bi-grid-1x2-fill"></i><span>Overview</span></a>
+      <a href="#incidents"  class="nav-item"><i class="bi bi-exclamation-triangle-fill"></i><span>Incidents</span></a>
+      <a href="#threats"    class="nav-item"><i class="bi bi-bug-fill"></i><span>Threats</span></a>
+      <a href="#ips"        class="nav-item"><i class="bi bi-geo-alt-fill"></i><span>Suspicious IPs</span></a>
+      <a href="#simulate"   class="nav-item"><i class="bi bi-terminal-fill"></i><span>Simulate</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="monitor-status">
+        <span class="pulse-dot"></span>
+        <span class="status-text">Live Monitoring</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════ MAIN ══════════════════════ -->
+  <main class="main-content">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      <div class="topbar-title">
+        <h1>Security Operations Center</h1>
+        <span class="topbar-subtitle">Threat Detection &amp; Incident Response</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-icon" id="refreshBtn" title="Refresh data">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <label class="theme-toggle" title="Toggle light/dark mode">
+          <input type="checkbox" id="themeToggle" />
+          <span class="toggle-track">
+            <span class="toggle-thumb">
+              <i class="bi bi-moon-fill moon-icon"></i>
+              <i class="bi bi-sun-fill sun-icon"></i>
+            </span>
+          </span>
+        </label>
+        <span class="live-badge"><span class="pulse-dot small"></span>LIVE</span>
+      </div>
+    </header>
+
+    <!-- ── SECTION: Overview ── -->
+    <section id="overview" class="dashboard-section">
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card critical">
+          <div class="stat-icon"><i class="bi bi-radioactive"></i></div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-critical">{{ critical }}</div>
+            <div class="stat-label">Critical Alerts</div>
+          </div>
+          <div class="stat-sparkline"></div>
+        </div>
+        <div class="stat-card high">
+          <div class="stat-icon"><i class="bi bi-exclamation-octagon-fill"></i></div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-high">{{ high }}</div>
+            <div class="stat-label">High Severity</div>
+          </div>
+        </div>
+        <div class="stat-card medium">
+          <div class="stat-icon"><i class="bi bi-shield-exclamation"></i></div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-medium">{{ medium }}</div>
+            <div class="stat-label">Medium Severity</div>
+          </div>
+        </div>
+        <div class="stat-card low">
+          <div class="stat-icon"><i class="bi bi-info-circle-fill"></i></div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-low">{{ low }}</div>
+            <div class="stat-label">Low Severity</div>
+          </div>
+        </div>
+        <div class="stat-card total">
+          <div class="stat-icon"><i class="bi bi-database-fill"></i></div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-total">{{ total }}</div>
+            <div class="stat-label">Total Incidents</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="card-header">
+            <span><i class="bi bi-pie-chart-fill"></i> Attack Distribution</span>
+            <button class="btn-refresh-chart" onclick="refreshCharts()"><i class="bi bi-arrow-repeat"></i></button>
+          </div>
+          <div class="chart-body">
+            <img id="chartDistribution" src="/static/charts/attack_distribution.png?t={{ now }}" alt="Attack Distribution" onerror="this.style.display='none'" />
+            <div class="chart-placeholder" id="noDistChart">
+              <i class="bi bi-pie-chart"></i><br>No data yet
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="card-header">
+            <span><i class="bi bi-bar-chart-fill"></i> Severity Breakdown</span>
+          </div>
+          <div class="chart-body">
+            <img id="chartSeverity" src="/static/charts/severity_bar.png?t={{ now }}" alt="Severity Bar" onerror="this.style.display='none'" />
+            <div class="chart-placeholder" id="noSevChart">
+              <i class="bi bi-bar-chart"></i><br>No data yet
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="card-header">
+            <span><i class="bi bi-diagram-3-fill"></i> Top Attackers</span>
+          </div>
+          <div class="chart-body">
+            <img id="chartAttackers" src="/static/charts/top_attackers.png?t={{ now }}" alt="Top Attackers" onerror="this.style.display='none'" />
+            <div class="chart-placeholder" id="noAttChart">
+              <i class="bi bi-people"></i><br>No data yet
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: Recent Incidents ── -->
+    <section id="incidents" class="dashboard-section">
+      <div class="section-header">
+        <h2><i class="bi bi-exclamation-triangle-fill"></i> Recent Incidents</h2>
+        <span class="incident-count badge-total" id="incident-badge">{{ total }} total</span>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="soc-table" id="incidentTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>Attacker IP</th>
+                <th>Attack Type</th>
+                <th>Risk Score</th>
+                <th>Severity</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="incidentTbody">
+              {% for inc in incidents %}
+              <tr class="severity-row {{ inc.alert_severity | lower }}">
+                <td class="mono">{{ inc.id }}</td>
+                <td class="mono time-cell">{{ inc.timestamp }}</td>
+                <td class="mono ip-cell">
+                  {% if inc.attacker_ip and inc.attacker_ip != 'Unknown' %}
+                    <span class="ip-badge">{{ inc.attacker_ip }}</span>
+                  {% else %}
+                    <span class="na">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="attack-type-tag {{ inc.attack_type }}">
+                    {{ inc.attack_type.replace('_', ' ').title() }}
+                  </span>
+                </td>
+                <td>
+                  <div class="risk-score-wrap">
+                    <div class="risk-bar" style="width: {{ inc.risk_score }}%"></div>
+                    <span class="risk-num">{{ inc.risk_score }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="severity-badge {{ inc.alert_severity | lower }}">
+                    {{ inc.alert_severity }}
+                  </span>
+                </td>
+                <td class="details-cell">{{ inc.details }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="empty-row">No incidents recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: Attack Type Cards ── -->
+    <section id="threats" class="dashboard-section">
+      <div class="section-header">
+        <h2><i class="bi bi-bug-fill"></i> Threat Intelligence</h2>
+      </div>
+      <div class="threat-cards-grid" id="threatCards">
+        {% for ac in attack_counts %}
+        <div class="threat-card {{ ac.attack_type }}">
+          <div class="threat-icon">
+            {% if ac.attack_type == 'brute_force' %}<i class="bi bi-lock-fill"></i>
+            {% elif ac.attack_type == 'port_scan' %}<i class="bi bi-wifi"></i>
+            {% elif ac.attack_type == 'malware' %}<i class="bi bi-bug-fill"></i>
+            {% elif ac.attack_type == 'unauthorized_access' %}<i class="bi bi-door-open-fill"></i>
+            {% else %}<i class="bi bi-shield-fill-x"></i>{% endif %}
+          </div>
+          <div class="threat-info">
+            <div class="threat-name">{{ ac.attack_type.replace('_', ' ').title() }}</div>
+            <div class="threat-count">{{ ac.count }} incident{{ 's' if ac.count != 1 }}</div>
+          </div>
+          <div class="threat-count-big">{{ ac.count }}</div>
+        </div>
+        {% else %}
+        <div class="empty-threats">No threats detected yet.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ── SECTION: Suspicious IPs ── -->
+    <section id="ips" class="dashboard-section">
+      <div class="section-header">
+        <h2><i class="bi bi-geo-alt-fill"></i> Suspicious IP Addresses</h2>
+      </div>
+      <div class="ip-grid" id="ipGrid">
+        {% for ip in suspicious_ips %}
+        <div class="ip-card">
+          <div class="ip-header">
+            <span class="ip-addr"><i class="bi bi-hdd-network-fill"></i> {{ ip.attacker_ip }}</span>
+            <span class="ip-sev severity-badge {{ ip.highest_severity | lower }}">{{ ip.highest_severity }}</span>
+          </div>
+          <div class="ip-stats">
+            <div class="ip-stat">
+              <span class="ip-stat-num">{{ ip.incident_count }}</span>
+              <span class="ip-stat-lbl">incidents</span>
+            </div>
+            <div class="ip-stat">
+              <span class="ip-stat-num risk-color">{{ ip.max_risk }}</span>
+              <span class="ip-stat-lbl">max risk</span>
+            </div>
+          </div>
+          <div class="ip-last-seen">Last seen: {{ ip.last_seen }}</div>
+          <div class="ip-risk-bar">
+            <div class="ip-risk-fill" style="width: {{ [ip.max_risk, 100] | min }}%"></div>
+          </div>
+        </div>
+        {% else %}
+        <div class="empty-threats">No suspicious IPs detected yet.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ── SECTION: Log Simulator ── -->
+    <section id="simulate" class="dashboard-section">
+      <div class="section-header">
+        <h2><i class="bi bi-terminal-fill"></i> Log Simulator</h2>
+        <span class="tag-badge">Inject log events in real-time</span>
+      </div>
+      <div class="simulator-panel">
+        <div class="sim-left">
+          <h3 class="sim-title">Quick Inject</h3>
+          <div class="quick-inject-btns">
+            <button class="quick-btn brute"      onclick="injectLog('Failed login from 192.168.1.99')">
+              <i class="bi bi-lock-fill"></i> Failed Login
+            </button>
+            <button class="quick-btn scan"       onclick="injectLog('Port scan detected from 10.99.0.5')">
+              <i class="bi bi-wifi"></i> Port Scan
+            </button>
+            <button class="quick-btn malware"    onclick="injectLog('Malware signature detected')">
+              <i class="bi bi-bug-fill"></i> Malware
+            </button>
+            <button class="quick-btn unauth"     onclick="injectLog('Unauthorized access attempt from 172.99.0.5')">
+              <i class="bi bi-door-open-fill"></i> Unauth Access
+            </button>
+            <button class="quick-btn brute-force" onclick="injectBruteForce()">
+              <i class="bi bi-arrow-repeat"></i> Simulate Brute Force
+            </button>
+          </div>
+        </div>
+        <div class="sim-right">
+          <h3 class="sim-title">Custom Log Line</h3>
+          <div class="custom-inject">
+            <input type="text" id="customLog" class="log-input" placeholder="Failed login from 1.2.3.4" />
+            <button class="btn-inject" onclick="injectCustomLog()">
+              <i class="bi bi-send-fill"></i> Inject
+            </button>
+          </div>
+          <div class="sim-response" id="simResponse"></div>
+        </div>
+      </div>
+
+      <!-- Live Log Feed -->
+      <div class="log-feed-card">
+        <div class="card-header">
+          <span><i class="bi bi-activity"></i> Live Alert Feed</span>
+          <button class="btn-sm" onclick="clearFeed()"><i class="bi bi-trash3"></i> Clear</button>
+        </div>
+        <div class="log-feed" id="logFeed">
+          <div class="log-entry info">Monitoring active. Waiting for events...</div>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- end main-content -->
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // ─── Theme Toggle ───────────────────────────────────────
+    const html = document.documentElement;
+    const toggle = document.getElementById('themeToggle');
+
+    const saved = localStorage.getItem('soc-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+    toggle.checked = (saved === 'light');
+
+    toggle.addEventListener('change', () => {
+      const theme = toggle.checked ? 'light' : 'dark';
+      html.setAttribute('data-theme', theme);
+      localStorage.setItem('soc-theme', theme);
+      refreshCharts();
+    });
+
+    // ─── Sidebar Toggle ────────────────────────────────────
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    });
+
+    // ─── Smooth Nav Scroll ─────────────────────────────────
+    document.querySelectorAll('.nav-item').forEach(link => {
+      link.addEventListener('click', e => {
+        document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      });
+    });
+
+    // ─── Stats Live Update ─────────────────────────────────
+    async function loadStats() {
+      try {
+        const r = await fetch('/api/stats');
+        const d = await r.json();
+        document.getElementById('stat-critical').textContent = d.critical;
+        document.getElementById('stat-high').textContent     = d.high;
+        document.getElementById('stat-medium').textContent   = d.medium;
+        document.getElementById('stat-low').textContent      = d.low;
+        document.getElementById('stat-total').textContent    = d.total;
+        document.getElementById('incident-badge').textContent = d.total + ' total';
+      } catch(e) { console.warn('Stats fetch failed', e); }
+    }
+
+    // ─── Incident Table Live Update ────────────────────────
+    const SEV_ICONS = {
+      brute_force:'bi-lock-fill', port_scan:'bi-wifi', malware:'bi-bug-fill',
+      unauthorized_access:'bi-door-open-fill', failed_login:'bi-shield-fill-x'
+    };
+    async function loadIncidents() {
+      try {
+        const r = await fetch('/api/incidents?limit=50');
+        const rows = await r.json();
+        const tbody = document.getElementById('incidentTbody');
+        if (!rows.length) return;
+        tbody.innerHTML = rows.map(inc => `
+          <tr class="severity-row ${(inc.alert_severity||'').toLowerCase()} new-row">
+            <td class="mono">${inc.id}</td>
+            <td class="mono time-cell">${inc.timestamp}</td>
+            <td class="mono ip-cell">
+              ${inc.attacker_ip && inc.attacker_ip !== 'Unknown'
+                ? `<span class="ip-badge">${inc.attacker_ip}</span>`
+                : '<span class="na">—</span>'}
+            </td>
+            <td><span class="attack-type-tag ${inc.attack_type}">${(inc.attack_type||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</span></td>
+            <td>
+              <div class="risk-score-wrap">
+                <div class="risk-bar" style="width:${inc.risk_score}%"></div>
+                <span class="risk-num">${inc.risk_score}</span>
+              </div>
+            </td>
+            <td><span class="severity-badge ${(inc.alert_severity||'').toLowerCase()}">${inc.alert_severity}</span></td>
+            <td class="details-cell">${inc.details}</td>
+          </tr>
+        `).join('');
+      } catch(e) { console.warn('Incidents fetch failed', e); }
+    }
+
+    // ─── Chart Refresh ─────────────────────────────────────
+    async function refreshCharts() {
+      try {
+        await fetch('/api/charts/refresh', { method:'POST' });
+        const ts = Date.now();
+        ['chartDistribution','chartSeverity','chartAttackers'].forEach((id, i) => {
+          const imgs = [
+            '/static/charts/attack_distribution.png',
+            '/static/charts/severity_bar.png',
+            '/static/charts/top_attackers.png'
+          ];
+          const el = document.getElementById(id);
+          if (el) { el.style.opacity = '0.5'; el.src = imgs[i] + '?t=' + ts; el.onload = () => el.style.opacity = '1'; }
+        });
+      } catch(e) {}
+    }
+
+    // ─── Log Injection ─────────────────────────────────────
+    async function injectLog(line) {
+      const resp = document.getElementById('simResponse');
+      resp.textContent = '⏳ Injecting...';
+      try {
+        const r = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ log: line })
+        });
+        const d = await r.json();
+        const msg = d.ok ? `✅ Injected. ${d.threats_detected} threat(s) detected.` : '❌ Error';
+        resp.textContent = msg;
+        addFeedEntry(line, d.threats_detected > 0 ? 'alert' : 'info');
+        showToast(d.threats_detected > 0 ? '🚨 Threat detected: ' + line : 'ℹ️ Log injected', d.threats_detected > 0 ? 'danger' : 'info');
+        setTimeout(() => { loadStats(); loadIncidents(); refreshCharts(); }, 600);
+      } catch(e) {
+        resp.textContent = '❌ Injection failed.';
+      }
+    }
+
+    function injectCustomLog() {
+      const val = document.getElementById('customLog').value.trim();
+      if (!val) { showToast('⚠️ Enter a log line first', 'warning'); return; }
+      injectLog(val);
+    }
+
+    async function injectBruteForce() {
+      const ip = '192.168.' + Math.floor(Math.random()*255) + '.' + Math.floor(Math.random()*255);
+      for (let i = 0; i < 4; i++) {
+        await injectLog(`Failed login from ${ip}`);
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+
+    // ─── Live Feed ─────────────────────────────────────────
+    function addFeedEntry(line, type='info') {
+      const feed = document.getElementById('logFeed');
+      const now = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `<span class="log-time">${now}</span> ${line}`;
+      feed.prepend(entry);
+      while (feed.children.length > 30) feed.lastChild.remove();
+    }
+
+    function clearFeed() {
+      const feed = document.getElementById('logFeed');
+      feed.innerHTML = '<div class="log-entry info">Feed cleared.</div>';
+    }
+
+    // ─── Toast ─────────────────────────────────────────────
+    function showToast(msg, type='info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ─── Refresh Button ────────────────────────────────────
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      loadStats(); loadIncidents(); refreshCharts();
+      showToast('Dashboard refreshed', 'info');
+    });
+
+    // ─── Auto Refresh every 15s ────────────────────────────
+    setInterval(() => { loadStats(); loadIncidents(); }, 15000);
+
+    // Initial load
+    loadStats(); loadIncidents();
+  </script>
+</body>
+</html>
