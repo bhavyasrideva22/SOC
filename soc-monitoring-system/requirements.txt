@@ -1,5 +1,4 @@
 Flask
 gunicorn
 watchdog
-matplotlib
 pandas
