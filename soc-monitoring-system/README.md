@@ -17,6 +17,30 @@ A Python-based mini **SIEM (Security Information and Event Management)** system 
 | 📈 Charts | Matplotlib attack distribution, severity, top IPs |
 | 🌙 Light/Dark Mode | Toggle between dark and light dashboard themes |
 | 💉 Log Simulator | Inject events directly from the dashboard |
+| 🔐 Secure Login | Flask sessions, hashed passwords, role-based access |
+| 👤 RBAC | Admin (full access) vs Analyst (monitoring only) |
+| 🚨 Auth Monitoring | Failed login tracking and brute-force alerts |
+
+---
+
+## 🔐 Authentication
+
+| Role | Username | Password | Access |
+|------|----------|----------|--------|
+| Admin | `admin` | `admin123` | Full dashboard + log simulator |
+| Analyst | `analyst` | `analyst123` | Monitoring view only |
+
+**Login workflow:** Open app → `/login` → enter credentials → session created → `/dashboard`
+
+- Passwords hashed with `werkzeug.security` (never stored in plain text)
+- Sessions expire after **30 minutes** of inactivity
+- **5+ failed logins** in 5 minutes triggers a brute-force SOC alert
+- Use `/logout` or the dashboard **Logout** button to end a session
+
+```bash
+# Run authentication tests
+python test_auth.py
+```
 
 ---
 
@@ -24,13 +48,15 @@ A Python-based mini **SIEM (Security Information and Event Management)** system 
 
 ```
 soc-monitoring-system/
-├── app.py              # Flask backend & API routes
+├── app.py              # Flask backend, login & protected routes
+├── auth.py             # Session auth, RBAC, brute-force detection
 ├── monitor.py          # Watchdog log monitoring engine
 ├── detector.py         # Threat detection engine
-├── database.py         # SQLite incident database
+├── database.py         # SQLite incidents + users + login audit
 ├── alerts.py           # Alert generation system
 ├── risk_engine.py      # Risk scoring & threat levels
 ├── charts.py           # Matplotlib chart generation
+├── test_auth.py        # Authentication test suite
 ├── requirements.txt
 ├── runtime.txt
 ├── logs/
@@ -38,9 +64,10 @@ soc-monitoring-system/
 ├── database/
 │   └── incidents.db    # SQLite database (auto-created)
 ├── templates/
+│   ├── login.html      # Bootstrap login page
 │   └── index.html      # SOC Dashboard HTML
 ├── static/
-│   ├── style.css       # Dashboard styles
+│   ├── style.css       # Dashboard + login styles
 │   └── charts/         # Generated chart images
 └── reports/            # (optional) exported reports
 ```
@@ -61,7 +88,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open your browser at: **http://localhost:5000**
+Open your browser at: **http://localhost:5000** — you will be redirected to the login page.
 
 ---
 
