@@ -10,6 +10,7 @@ build/
 venv/
 .venv/
 env/
+soc-monitoring-system/venv/
 
 # Local database (ephemeral on Render; recreated on deploy)
 database/incidents.db

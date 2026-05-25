@@ -99,7 +99,7 @@ Open your browser at: **http://localhost:5000** — you will be redirected to th
 | Setting | Value |
 |---------|--------|
 | **Runtime** | Python 3 |
-| **Root Directory** | `soc-monitoring-system` (folder that contains `app.py`) |
+| **Root Directory** | *(leave empty — `app.py` is at repo root)* |
 | **Build Command** | `pip install -r requirements.txt` |
 | **Start Command** | `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120` |
 | **Health Check Path** | `/health` |
