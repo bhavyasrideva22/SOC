@@ -92,16 +92,45 @@ Open your browser at: **http://localhost:5000** — you will be redirected to th
 
 ---
 
-## 🌐 Deployment
+## 🌐 Deployment (Render)
 
-### Render / Railway
+### Render settings
 
-**Start command:**
-```
-gunicorn app:app
-```
+| Setting | Value |
+|---------|--------|
+| **Runtime** | Python 3 |
+| **Root Directory** | `soc-monitoring-system` (folder that contains `app.py`) |
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120` |
+| **Health Check Path** | `/health` |
+| **Python version** | `3.11.9` (see `runtime.txt`) |
 
-**Environment:** Python 3.11.9 (see `runtime.txt`)
+### Environment variables (Render Dashboard → Environment)
+
+| Variable | Required | Notes |
+|----------|----------|--------|
+| `FLASK_SECRET_KEY` | Yes | Click **Generate** in Render (keeps sessions secure) |
+| `PORT` | Auto | Set by Render — do not override |
+
+### Deploy checklist (if build fails)
+
+1. **Check logs** in Render Dashboard → your service → **Logs** (search for `error`).
+2. **Runtime** must be **Python**, not Node or Docker (unless you add a Dockerfile).
+3. **Python version** — use `runtime.txt` (`python-3.11.9`). Avoid 3.14 on Render if numpy/matplotlib fail to build.
+4. **No matplotlib** — `requirements.txt` must not include matplotlib (numpy needs a compiler on some versions).
+5. **Start command** must bind to `0.0.0.0:$PORT` or you get **502 Bad Gateway**.
+6. **Health check** — use `/health` (returns `200`). Do not use `/` alone (it redirects to `/login`).
+7. **Root directory** — point Render at the folder containing `app.py`, `requirements.txt`, and `templates/`.
+8. **Case-sensitive paths** on Linux — file names must match exactly (`app.py`, not `App.py`).
+9. **Do not commit** `venv/` — use `.gitignore` (included).
+
+### Login after deploy
+
+Open your Render URL → login with `admin` / `admin123`.
+
+### Optional: Blueprint deploy
+
+If you use `render.yaml`, connect the repo and Render will apply the settings in that file.
 
 ---
 

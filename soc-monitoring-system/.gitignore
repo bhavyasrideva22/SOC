@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environment (do not commit)
+venv/
+.venv/
+env/
+
+# Local database (ephemeral on Render; recreated on deploy)
+database/incidents.db
+
+# Generated charts (optional)
+static/charts/*.png
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment secrets
+.env
+.env.*

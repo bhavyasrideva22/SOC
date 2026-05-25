@@ -88,7 +88,10 @@ def format_alert_text(alert: dict) -> str:
 
 def print_alert(alert: dict):
     """Print a formatted alert to the console."""
-    print(format_alert_text(alert))
+    try:
+        print(format_alert_text(alert))
+    except UnicodeEncodeError:
+        print(format_alert_text(alert).encode('ascii', errors='replace').decode('ascii'))
 
 
 def get_alert_badge_class(severity: str) -> str:

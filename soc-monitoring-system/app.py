@@ -41,10 +41,16 @@ def startup():
             print(f"[APP] Monitor start failed: {e}")
 
 
+@app.route('/health')
+def health():
+    """Render health check — must return 200 (not a redirect)."""
+    return jsonify({'status': 'ok'}), 200
+
+
 @app.before_request
 def enforce_session_timeout():
     """Logout users after inactivity period."""
-    if request.endpoint in ('login', 'static', None):
+    if request.endpoint in ('login', 'static', 'health', None):
         return
     if auth.SESSION_USERNAME_KEY in session and not auth.is_session_valid():
         auth.logout_user()
